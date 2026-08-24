@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "@bdelanghe/flake-verbs",
+      "dependencies": {
+        "@bounded-systems/verbspec": "github:bounded-systems/verbspec",
+        "zod": "^4.4.3",
+      },
+    },
+  },
+  "packages": {
+    "@bounded-systems/verbspec": ["@bounded-systems/verbspec@github:bounded-systems/verbspec#860d3bd", { "peerDependencies": { "zod": "^3.25.0 || ^4.0.0" } }, "bounded-systems-verbspec-860d3bd", "sha512-RVp4hjrJMYY6ucdjACijzRLudNG1/dIZf3jupVeXg6yubkveRbANHhDSaESgXoMuinnz3ECkJSjc/GC9UFAIgQ=="],
+
+    "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+  }
+}

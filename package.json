@@ -1,0 +1,14 @@
+{
+  "name": "@bdelanghe/flake-verbs",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Flake-structure verbs — which inputs a flake actually uses, and how far each has drifted from its upstream",
+  "scripts": {
+    "verb": "bun run src/cli.ts"
+  },
+  "dependencies": {
+    "@bounded-systems/verbspec": "github:bounded-systems/verbspec",
+    "zod": "^4.4.3"
+  }
+}
