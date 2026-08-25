@@ -53,7 +53,10 @@ if (result.kind === "ok") {
   }
   console.log(spec?.render ? spec.render(result.output, result.input) : render(result.output));
   const code = spec?.exitCode?.(result.output, result.input) ?? 0;
-  await emitVerbSpan({ verb: result.id, ok: code === 0, exitCode: code, startMs: __start });
+  const __root = (result.input as { root?: string } | undefined)?.root ?? "";
+  const __m = __root.match(/repos\/io\.github\/([^/]+\/[^/]+)/);
+  await emitVerbSpan({ verb: result.id, ok: code === 0, exitCode: code, startMs: __start,
+    attributes: __m ? { repo: __m[1] } : {} });
   process.exit(code);
 } else {
   console.error(result.message ?? String(result.kind));

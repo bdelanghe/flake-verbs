@@ -27,8 +27,13 @@ export async function emitVerbSpan(opts: {
     typeof v === "string" ? { stringValue: v }
     : typeof v === "boolean" ? { boolValue: v }
     : Number.isInteger(v) ? { intValue: String(v) } : { doubleValue: v };
+  // Session label, toolpath-always: CLAUDE_JOB_DIR's basename IS the toolpath
+  // path-id suffix, so spans join to session provenance with zero lookup.
+  const jd = process.env.CLAUDE_JOB_DIR;
+  const session = jd ? `path-claude-code-${jd.split("/").pop()}` : undefined;
   const attrs = Object.entries({
     "verb.id": opts.verb, "verb.ok": opts.ok, "verb.exit_code": opts.exitCode,
+    ...(session ? { session } : {}),
     ...opts.attributes,
   }).map(([key, v]) => ({ key, value: toVal(v) }));
 

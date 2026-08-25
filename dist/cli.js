@@ -14455,10 +14455,13 @@ var ENDPOINT = (process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:431
 var hex3 = (bytes) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, "0")).join("");
 async function emitVerbSpan(opts) {
   const toVal = (v) => typeof v === "string" ? { stringValue: v } : typeof v === "boolean" ? { boolValue: v } : Number.isInteger(v) ? { intValue: String(v) } : { doubleValue: v };
+  const jd = process.env.CLAUDE_JOB_DIR;
+  const session = jd ? `path-claude-code-${jd.split("/").pop()}` : undefined;
   const attrs = Object.entries({
     "verb.id": opts.verb,
     "verb.ok": opts.ok,
     "verb.exit_code": opts.exitCode,
+    ...session ? { session } : {},
     ...opts.attributes
   }).map(([key, v]) => ({ key, value: toVal(v) }));
   const body = JSON.stringify({
@@ -15127,7 +15130,15 @@ if (result.kind === "ok") {
   }
   console.log(spec?.render ? spec.render(result.output, result.input) : render(result.output));
   const code = spec?.exitCode?.(result.output, result.input) ?? 0;
-  await emitVerbSpan({ verb: result.id, ok: code === 0, exitCode: code, startMs: __start });
+  const __root = result.input?.root ?? "";
+  const __m = __root.match(/repos\/io\.github\/([^/]+\/[^/]+)/);
+  await emitVerbSpan({
+    verb: result.id,
+    ok: code === 0,
+    exitCode: code,
+    startMs: __start,
+    attributes: __m ? { repo: __m[1] } : {}
+  });
   process.exit(code);
 } else {
   console.error(result.message ?? String(result.kind));
