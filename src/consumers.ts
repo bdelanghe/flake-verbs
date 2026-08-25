@@ -128,16 +128,22 @@ function outputsParamLines(lines: string[]): Set<number> {
   const out = new Set<number>();
   let depth = 0;
   let started = false;
+  let opened = false;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!started && /^\s*outputs\s*=\s*\{/.test(line)) started = true;
     if (!started) continue;
     out.add(i + 1);
+    // Stop the moment the PARAM braces close — an outputs body whose attrset
+    // opens on the same line (`outputs = {...}: {`) must not be swallowed.
+    // Fixture-test-caught bug: line-granular net counting let `}: {` read as
+    // still-open and excluded the entire body from reference scanning.
+    let done = false;
     for (const ch of line) {
-      if (ch === "{") depth++;
-      else if (ch === "}") depth--;
+      if (ch === "{") { depth++; opened = true; }
+      else if (ch === "}") { depth--; if (opened && depth === 0) { done = true; break; } }
     }
-    if (depth <= 0) break;
+    if (done) break;
   }
   return out;
 }

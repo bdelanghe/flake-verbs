@@ -7,6 +7,7 @@
  * every surface at once and none of them can describe a verb the others lack.
  */
 import { dispatch, render, toMcpToolset, toHelp } from "@bounded-systems/verbspec";
+import { emitVerbSpan } from "./otel.ts";
 import { inputs } from "./verbs/inputs.ts";
 import { inputDrift } from "./verbs/input-drift.ts";
 
@@ -37,6 +38,7 @@ if (argv[1] === "--help" && argv[0] in registry) {
   process.exit(0);
 }
 
+const __start = Date.now();
 const result = await dispatch(registry, argv);
 
 if (result.kind === "ok") {
@@ -50,8 +52,11 @@ if (result.kind === "ok") {
     console.error(`warning: ${w}`);
   }
   console.log(spec?.render ? spec.render(result.output, result.input) : render(result.output));
-  process.exit(spec?.exitCode?.(result.output, result.input) ?? 0);
+  const code = spec?.exitCode?.(result.output, result.input) ?? 0;
+  await emitVerbSpan({ verb: result.id, ok: code === 0, exitCode: code, startMs: __start });
+  process.exit(code);
 } else {
   console.error(result.message ?? String(result.kind));
+  await emitVerbSpan({ verb: String(argv[0] ?? "?"), ok: false, exitCode: result.exitCode ?? 1, startMs: __start });
   process.exit(result.exitCode ?? 1);
 }

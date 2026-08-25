@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Flake-structure verbs — which inputs a flake actually uses, and how far each has drifted from its upstream",
+  "description": "Flake-structure verbs \u2014 which inputs a flake actually uses, and how far each has drifted from its upstream",
   "scripts": {
-    "verb": "bun run src/cli.ts"
+    "verb": "bun run src/cli.ts",
+    "test": "bun run src/test.ts"
   },
   "dependencies": {
     "@bounded-systems/verbspec": "github:bounded-systems/verbspec",

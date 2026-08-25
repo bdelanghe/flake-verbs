@@ -1,0 +1,10 @@
+{
+  "nodes": {
+    "root": { "inputs": { "used": "used", "dead": "dead", "local": "local" } },
+    "used": { "locked": { "type": "github", "owner": "nixos", "repo": "nixpkgs", "rev": "0000000000000000000000000000000000000001", "lastModified": 1755000000 } },
+    "dead": { "locked": { "type": "github", "owner": "nix-community", "repo": "home-manager", "rev": "0000000000000000000000000000000000000002", "lastModified": 1755000000 } },
+    "local": { "locked": { "type": "path", "path": "/tmp/does-not-exist-anywhere", "lastModified": 1755000000 } }
+  },
+  "root": "root",
+  "version": 7
+}

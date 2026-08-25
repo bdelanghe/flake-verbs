@@ -1,0 +1,20 @@
+name: test
+# The fixture suite: verbs against a synthetic flake with a known-dead input
+# and a path: input — deterministic, offline (no gh assertions).
+on:
+  push: { branches: [ main ] }
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25
+      - name: Install deps
+        run: nix run nixpkgs#bun -- install
+      - name: Run fixture tests
+        run: nix run nixpkgs#bun -- run src/test.ts
+      - name: Bundle still builds
+        run: nix run nixpkgs#bun -- build src/cli.ts --outfile /tmp/cli.js --target bun
