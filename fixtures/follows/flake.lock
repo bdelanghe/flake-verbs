@@ -1,0 +1,10 @@
+{
+  "nodes": {
+    "root": { "inputs": { "nixpkgs": "nixpkgs", "hm": "hm", "hmpkgs": ["hm", "nixpkgs"] } },
+    "nixpkgs": { "locked": { "type": "github", "owner": "nixos", "repo": "nixpkgs", "rev": "1111111111111111111111111111111111111111", "lastModified": 1755000000 } },
+    "hm": { "inputs": { "nixpkgs": "nixpkgs_2" }, "locked": { "type": "github", "owner": "nix-community", "repo": "home-manager", "rev": "2222222222222222222222222222222222222222", "lastModified": 1755000000 } },
+    "nixpkgs_2": { "locked": { "type": "github", "owner": "nixos", "repo": "nixpkgs", "rev": "3333333333333333333333333333333333333333", "lastModified": 1755000000 } }
+  },
+  "root": "root",
+  "version": 7
+}

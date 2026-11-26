@@ -11,6 +11,8 @@ import { inputs } from "./verbs/inputs.ts";
 import { inputDrift } from "./verbs/input-drift.ts";
 import { namespaceIsSet } from "./deep.ts";
 
+import { readDirectInputs } from "./lock.ts";
+
 const ROOT = new URL("../fixtures/testflake", import.meta.url).pathname;
 let fails = 0;
 const expect = (name: string, got: unknown, want: unknown) => {
@@ -39,6 +41,13 @@ const INFLAKE = new URL("../fixtures/deepinflake", import.meta.url).pathname;
 expect("deep: option set in flake.nix counts", await namespaceIsSet(INFLAKE, "programs.devcontainers-cli"), true);
 // …but the `"${dx}/…"` import line itself is not a setting of `programs.dx`.
 expect("deep: import line is not a setting", await namespaceIsSet(INFLAKE, "programs.dx"), false);
+
+// A follows path is input names walked from the root, not a node key:
+// ["hm", "nixpkgs"] lands on hm's nixpkgs (node `nixpkgs_2`), not root's.
+const FOLLOWS = new URL("../fixtures/follows", import.meta.url).pathname;
+const followed = await readDirectInputs(FOLLOWS);
+expect("follows: hmpkgs resolves via hm", followed.get("hmpkgs")?.rev, "3".repeat(40));
+expect("follows: nixpkgs is root's own", followed.get("nixpkgs")?.rev, "1".repeat(40));
 
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
