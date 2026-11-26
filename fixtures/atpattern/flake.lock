@@ -1,0 +1,10 @@
+{
+  "nodes": {
+    "root": { "inputs": { "used": "used", "dead": "dead", "alsodead": "alsodead" } },
+    "used": { "locked": { "type": "github", "owner": "nixos", "repo": "nixpkgs", "rev": "0000000000000000000000000000000000000001", "lastModified": 1755000000 } },
+    "dead": { "locked": { "type": "github", "owner": "nix-community", "repo": "home-manager", "rev": "0000000000000000000000000000000000000002", "lastModified": 1755000000 } },
+    "alsodead": { "locked": { "type": "github", "owner": "numtide", "repo": "flake-utils", "rev": "0000000000000000000000000000000000000003", "lastModified": 1755000000 } }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -119,33 +119,33 @@ function sanitize(line: string): string {
 }
 
 /**
- * Lines of the `outputs = { a, b, … }:` parameter list.
+ * Blank out the `outputs = { a, b, … }:` parameter pattern.
  *
  * Destructuring the inputs is how a flake *names* them, not how it uses them —
- * counting it marks every input in the flake as consumed.
+ * counting it marks every input in the flake as consumed. The pattern may be
+ * `{ … }`, `{ … }@name` or `name@{ … }`, and may span lines. Only the pattern
+ * itself is blanked, so a body on the same line (`outputs = { a }: a.lib;`)
+ * is still scanned.
  */
-function outputsParamLines(lines: string[]): Set<number> {
-  const out = new Set<number>();
+function maskOutputsParams(lines: string[]): string[] {
+  const start = lines.findIndex((l) => /^\s*outputs\s*=/.test(l));
+  if (start < 0) return lines;
+  const text = lines.slice(start).join("\n");
+  // Anything but a brace pattern (`outputs = inputs:`) destructures nothing.
+  const head = text.match(/^\s*outputs\s*=\s*(?:[A-Za-z_][\w'-]*\s*@\s*)?\{/);
+  if (!head) return lines;
+
   let depth = 0;
-  let started = false;
-  let opened = false;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!started && /^\s*outputs\s*=\s*\{/.test(line)) started = true;
-    if (!started) continue;
-    out.add(i + 1);
-    // Stop the moment the PARAM braces close — an outputs body whose attrset
-    // opens on the same line (`outputs = {...}: {`) must not be swallowed.
-    // Fixture-test-caught bug: line-granular net counting let `}: {` read as
-    // still-open and excluded the entire body from reference scanning.
-    let done = false;
-    for (const ch of line) {
-      if (ch === "{") { depth++; opened = true; }
-      else if (ch === "}") { depth--; if (opened && depth === 0) { done = true; break; } }
-    }
-    if (done) break;
+  let end = text.length;
+  for (let i = head[0].length - 1; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}" && --depth === 0) { end = i + 1; break; }
   }
-  return out;
+  const masked =
+    text.slice(0, head[0].length - 1) +
+    text.slice(head[0].length - 1, end).replace(/[^\n]/g, " ") +
+    text.slice(end);
+  return [...lines.slice(0, start), ...masked.split("\n")];
 }
 
 export type ScanResult = {
@@ -167,15 +167,16 @@ export async function scanConsumers(root: string, names: string[]): Promise<Scan
     const lines = (await readFile(file, "utf8")).split("\n");
     const declLines =
       rel === "flake.nix"
-        ? new Set<number>([...inputsBlockLines(lines), ...outputsParamLines(lines)])
+        ? inputsBlockLines(lines)
         : new Set<number>();
+    const scanned = rel === "flake.nix" ? maskOutputsParams(lines) : lines;
     lines.forEach((text, i) => {
       allLines.push({
         file,
         rel,
         n: i + 1,
         text,
-        code: sanitize(text),
+        code: sanitize(scanned[i]),
         declaration: declLines.has(i + 1),
       });
     });
