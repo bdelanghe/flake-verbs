@@ -9,6 +9,7 @@
  */
 import { inputs } from "./verbs/inputs.ts";
 import { inputDrift } from "./verbs/input-drift.ts";
+import { namespaceIsSet } from "./deep.ts";
 
 const ROOT = new URL("../fixtures/testflake", import.meta.url).pathname;
 let fails = 0;
@@ -31,6 +32,13 @@ const atVerdict = (n: string) => at.inputs.find((i) => i.name === n)?.verdict;
 expect("at-pattern: used is referenced", atVerdict("used"), "referenced");
 expect("at-pattern: dead is unused", atVerdict("dead"), "unused");
 expect("at-pattern: alsodead is unused", atVerdict("alsodead"), "unused");
+
+// --deep: an option namespace set inside flake.nix itself is set. Ignoring
+// flake.nix turned a load-bearing module import into a false `unused`.
+const INFLAKE = new URL("../fixtures/deepinflake", import.meta.url).pathname;
+expect("deep: option set in flake.nix counts", await namespaceIsSet(INFLAKE, "programs.devcontainers-cli"), true);
+// …but the `"${dx}/…"` import line itself is not a setting of `programs.dx`.
+expect("deep: import line is not a setting", await namespaceIsSet(INFLAKE, "programs.dx"), false);
 
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
