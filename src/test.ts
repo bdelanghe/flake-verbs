@@ -49,6 +49,23 @@ const followed = await readDirectInputs(FOLLOWS);
 expect("follows: hmpkgs resolves via hm", followed.get("hmpkgs")?.rev, "3".repeat(40));
 expect("follows: nixpkgs is root's own", followed.get("nixpkgs")?.rev, "1".repeat(40));
 
+// Dotted declarations (`inputs.x.url = …`, `inputs.x.inputs.y.follows = …`)
+// are declarations too — they must not count as uses.
+const DOTTED = new URL("../fixtures/dotted", import.meta.url).pathname;
+const dotted = await inputs.run({ root: DOTTED, unusedOnly: false, deep: false });
+const dottedVerdict = (n: string) => dotted.inputs.find((i) => i.name === n)?.verdict;
+expect("dotted: used is referenced", dottedVerdict("used"), "referenced");
+expect("dotted: dead is unused", dottedVerdict("dead"), "unused");
+expect("dotted: alsodead is unused", dottedVerdict("alsodead"), "unused");
+
+// A line that only *uses* an input through `inputs.` (the body of
+// `outputs = inputs:` starting on the next line) is not a declaration.
+const BODYUSE = new URL("../fixtures/bodyuse", import.meta.url).pathname;
+const bodyuse = await inputs.run({ root: BODYUSE, unusedOnly: false, deep: false });
+const bodyuseVerdict = (n: string) => bodyuse.inputs.find((i) => i.name === n)?.verdict;
+expect("body use: parts is referenced", bodyuseVerdict("parts"), "referenced");
+expect("body use: dead is unused", bodyuseVerdict("dead"), "unused");
+
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
 expect("local is unportable", statusOf("local"), "unportable");

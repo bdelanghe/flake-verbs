@@ -1,0 +1,9 @@
+{
+  "nodes": {
+    "root": { "inputs": { "parts": "parts", "dead": "dead" } },
+    "parts": { "locked": { "type": "github", "owner": "hercules-ci", "repo": "flake-parts", "rev": "0000000000000000000000000000000000000001", "lastModified": 1755000000 } },
+    "dead": { "locked": { "type": "github", "owner": "nix-community", "repo": "home-manager", "rev": "0000000000000000000000000000000000000002", "lastModified": 1755000000 } }
+  },
+  "root": "root",
+  "version": 7
+}

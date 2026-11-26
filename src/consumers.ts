@@ -43,26 +43,32 @@ function identRe(name: string): RegExp {
 }
 
 /**
- * The line range of `flake.nix`'s `inputs = { … }` block, which declares inputs
- * rather than using them. Brace-counted rather than indentation-guessed.
+ * The lines of `flake.nix` that declare inputs rather than use them: the
+ * `inputs = { … }` block, and equally every dotted top-level declaration —
+ * `inputs.x.url = …`, `inputs.x.inputs.y.follows = …`, `inputs.x = { … };`.
+ * Missing the dotted form made every input in such a flake look referenced.
+ *
+ * Only statements at the flake's top level (brace depth 1) count, so an
+ * `inputs.x…` inside `outputs` is still read as a use. Brace-counted over
+ * sanitized code, so braces in comments and strings don't shift the depth.
  */
 function inputsBlockLines(lines: string[]): Set<number> {
   const out = new Set<number>();
   let depth = 0;
-  let started = false;
+  let inDecl = false;
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (!started && /^\s*inputs\s*=\s*\{/.test(line)) {
-      started = true;
-      depth = 0;
+    const code = sanitize(lines[i]);
+    // A declaration is a binding (`inputs = …`, `inputs.x.url = …`, `inputs."x".follows = …`),
+    // not any line that starts with `inputs.`: `inputs.parts.lib.mkFlake …` is a use.
+    if (!inDecl && depth === 1 && /^\s*inputs(\s*\.\s*(?:[A-Za-z_][\w'-]*|"[^"]*"))*\s*=(?!=)/.test(code)) inDecl = true;
+    for (const ch of code) {
+      if (ch === "{") depth++;
+      else if (ch === "}") depth--;
     }
-    if (started) {
+    if (inDecl) {
       out.add(i + 1);
-      for (const ch of line) {
-        if (ch === "{") depth++;
-        else if (ch === "}") depth--;
-      }
-      if (depth <= 0 && /\}/.test(line)) break;
+      // The statement ends once its braces have closed back to the top level.
+      if (depth <= 1) inDecl = false;
     }
   }
   return out;
