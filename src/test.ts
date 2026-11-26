@@ -23,6 +23,15 @@ const verdictOf = (n: string) => inv.inputs.find((i) => i.name === n)?.verdict;
 expect("used is referenced", verdictOf("used"), "referenced");
 expect("dead is unused", verdictOf("dead"), "unused");
 
+// `outputs = inputs@{ … }:` names inputs just like `outputs = { … }:` does,
+// including when the param list continues onto the next line.
+const AT = new URL("../fixtures/atpattern", import.meta.url).pathname;
+const at = await inputs.run({ root: AT, unusedOnly: false, deep: false });
+const atVerdict = (n: string) => at.inputs.find((i) => i.name === n)?.verdict;
+expect("at-pattern: used is referenced", atVerdict("used"), "referenced");
+expect("at-pattern: dead is unused", atVerdict("dead"), "unused");
+expect("at-pattern: alsodead is unused", atVerdict("alsodead"), "unused");
+
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
 expect("local is unportable", statusOf("local"), "unportable");
