@@ -85,7 +85,10 @@ export const inputDrift = defineVerb({
         continue;
       }
 
-      const branch = meta.default_branch;
+      // Compare against what the input follows. A lock on `nixos-24.05` holds
+      // backports the default branch never gets; measured against the default
+      // branch, every release-branch input reads as orphaned.
+      const branch = ref.ref ?? meta.default_branch;
       const head = await ghJson<{ sha: string; commit: { committer: { date: string } } }>([
         `repos/${slug}/commits/${branch}`,
       ]);
