@@ -70,9 +70,17 @@ export async function declaredNamespace(
   return undefined;
 }
 
-/** Does anything in the repo reference this option namespace outside flake.nix? */
+/**
+ * Does anything in the repo reference this option namespace?
+ *
+ * flake.nix counts — inline Home Manager / NixOS config there is as much a
+ * setting as a module file. What doesn't count is a `"${leaf}/…"` import line,
+ * which only matters when the input happens to share the namespace's leaf name.
+ */
 export async function namespaceIsSet(root: string, namespace: string): Promise<boolean> {
   const leaf = namespace.split(".").pop()!;
   const { consumers } = await scanConsumers(root, [leaf]);
-  return (consumers.get(leaf) ?? []).some((c) => c.file !== "flake.nix");
+  return (consumers.get(leaf) ?? []).some(
+    (c) => c.file !== "flake.nix" || !c.text.includes(`\${${leaf}}`),
+  );
 }
