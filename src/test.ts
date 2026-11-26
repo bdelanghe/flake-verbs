@@ -23,6 +23,15 @@ const verdictOf = (n: string) => inv.inputs.find((i) => i.name === n)?.verdict;
 expect("used is referenced", verdictOf("used"), "referenced");
 expect("dead is unused", verdictOf("dead"), "unused");
 
+// Dotted declarations (`inputs.x.url = …`, `inputs.x.inputs.y.follows = …`)
+// are declarations too — they must not count as uses.
+const DOTTED = new URL("../fixtures/dotted", import.meta.url).pathname;
+const dotted = await inputs.run({ root: DOTTED, unusedOnly: false, deep: false });
+const dottedVerdict = (n: string) => dotted.inputs.find((i) => i.name === n)?.verdict;
+expect("dotted: used is referenced", dottedVerdict("used"), "referenced");
+expect("dotted: dead is unused", dottedVerdict("dead"), "unused");
+expect("dotted: alsodead is unused", dottedVerdict("alsodead"), "unused");
+
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
 expect("local is unportable", statusOf("local"), "unportable");
