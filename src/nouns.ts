@@ -30,6 +30,8 @@ export const LockedRef = z.object({
   owner: z.string().optional(),
   repo: z.string().optional(),
   rev: z.string().optional(),
+  /** Branch or tag the input follows (`original.ref`), when it names one. */
+  ref: z.string().optional(),
   /** Epoch seconds recorded in the lock. */
   last_modified: z.number().optional(),
   last_modified_iso: z.string().optional(),

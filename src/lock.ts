@@ -16,7 +16,10 @@ type LockNode = {
 };
 type Lock = { nodes: Record<string, LockNode>; root: string; version: number };
 
-function describe(locked: Record<string, unknown>): LockedRef {
+function describe(
+  locked: Record<string, unknown>,
+  original: Record<string, unknown> = {},
+): LockedRef {
   const rawType = String(locked.type ?? "other");
   const known = ["github", "git", "path", "tarball", "indirect"];
   const type = (known.includes(rawType) ? rawType : "other") as InputType;
@@ -37,6 +40,7 @@ function describe(locked: Record<string, unknown>): LockedRef {
     owner: typeof locked.owner === "string" ? locked.owner : undefined,
     repo: typeof locked.repo === "string" ? locked.repo : undefined,
     rev: typeof locked.rev === "string" ? locked.rev : undefined,
+    ref: typeof original.ref === "string" ? original.ref : undefined,
     last_modified: lastModified,
     last_modified_iso: lastModified
       ? new Date(lastModified * 1000).toISOString().slice(0, 10)
@@ -76,7 +80,7 @@ export async function readDirectInputs(root: string): Promise<Map<string, Locked
     const key = Array.isArray(ref) ? ref[ref.length - 1] : ref;
     const node = lock.nodes[key];
     if (!node?.locked) continue;
-    out.set(name, describe(node.locked));
+    out.set(name, describe(node.locked, node.original));
   }
   return out;
 }

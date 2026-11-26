@@ -1,0 +1,12 @@
+#!/bin/sh
+# Stand-in for `gh api`: the locked rev sits on the nixos-24.05 release branch,
+# which carries backports that the default branch (master) does not have.
+A=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+case "$2" in
+  repos/nixos/nixpkgs) echo '{"default_branch":"master"}' ;;
+  repos/nixos/nixpkgs/commits/master) echo '{"sha":"mmmm","commit":{"committer":{"date":"2026-11-01T00:00:00Z"}}}' ;;
+  repos/nixos/nixpkgs/commits/nixos-24.05) echo '{"sha":"rrrr","commit":{"committer":{"date":"2026-10-01T00:00:00Z"}}}' ;;
+  repos/nixos/nixpkgs/compare/$A...master) echo '{"ahead_by":900,"behind_by":40}' ;;
+  repos/nixos/nixpkgs/compare/$A...nixos-24.05) echo '{"ahead_by":3,"behind_by":0}' ;;
+  *) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+esac
