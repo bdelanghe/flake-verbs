@@ -1,0 +1,9 @@
+{
+  "nodes": {
+    "root": { "inputs": { "flaky": "flaky", "gone": "gone" } },
+    "flaky": { "locked": { "type": "github", "owner": "o", "repo": "flaky", "rev": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "lastModified": 1755000000 } },
+    "gone": { "locked": { "type": "github", "owner": "o", "repo": "gone", "rev": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "lastModified": 1755000000 } }
+  },
+  "root": "root",
+  "version": 7
+}

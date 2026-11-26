@@ -30,5 +30,27 @@ expect("unportable count", drift.summary.unportable, 1);
 // github inputs must not be called unportable, whatever the network said
 expect("used not unportable", statusOf("used") === "unportable", false);
 
+// input-drift against a fixture's stand-in `gh` (fixtures/<x>/bin/gh), so the
+// upstream answers are fixed and the run stays offline. A child process,
+// because Bun.spawn does not see PATH changes made at runtime.
+async function driftWithFakeGh(root: string) {
+  const mod = new URL("./verbs/input-drift.ts", import.meta.url).pathname;
+  const code = `const { inputDrift } = await import(${JSON.stringify(mod)});
+    console.log(JSON.stringify(await inputDrift.run({ root: ${JSON.stringify(root)}, problemsOnly: false })));`;
+  const proc = Bun.spawn([process.execPath, "-e", code], {
+    stdout: "pipe",
+    env: { ...process.env, PATH: `${root}/bin:${process.env.PATH}` },
+  });
+  const [text] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
+  return JSON.parse(text) as Awaited<ReturnType<typeof inputDrift.run>>;
+}
+
+// A failed compare is only evidence of an orphaned rev when GitHub says the
+// rev doesn't exist (404). A server error or timeout is "unknown", not LOST.
+const cf = await driftWithFakeGh(new URL("../fixtures/comparefail", import.meta.url).pathname);
+const cfStatus = (n: string) => cf.inputs.find((i) => i.name === n)?.status;
+expect("compare 5xx: unknown, not orphaned", cfStatus("flaky"), "unknown");
+expect("compare 404: still orphaned", cfStatus("gone"), "orphaned");
+
 console.log(fails ? `\n${fails} FAILED` : "\nall verb fixtures pass");
 process.exit(fails ? 1 : 0);

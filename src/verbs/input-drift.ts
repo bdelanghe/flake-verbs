@@ -24,13 +24,28 @@ const Output = versioned({
  * process listing or an MCP transcript.
  */
 async function ghJson<T>(args: string[]): Promise<T | null> {
+  const r = await ghCall<T>(args);
+  return r.ok ? r.data : null;
+}
+
+/** Like ghJson, but a failure keeps the HTTP status `gh` reported, if any. */
+async function ghCall<T>(
+  args: string[],
+): Promise<{ ok: true; data: T } | { ok: false; status?: number }> {
   try {
     const proc = Bun.spawn(["gh", "api", ...args], { stdout: "pipe", stderr: "pipe" });
-    const [text, code] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
-    if (code !== 0) return null;
-    return JSON.parse(text) as T;
+    const [text, err, code] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+      proc.exited,
+    ]);
+    if (code !== 0) {
+      const m = err.match(/\(HTTP (\d{3})\)/);
+      return { ok: false, status: m ? Number(m[1]) : undefined };
+    }
+    return { ok: true, data: JSON.parse(text) as T };
   } catch {
-    return null;
+    return { ok: false };
   }
 }
 
@@ -108,11 +123,26 @@ export const inputDrift = defineVerb({
       // commits the branch has that the lock doesn't (ordinary staleness), and
       // commits the *lock* has that the branch doesn't — which means the
       // revision was never pushed, and rebuilding elsewhere silently loses it.
-      const cmp = await ghJson<{ ahead_by: number; behind_by: number }>([
+      const res = await ghCall<{ ahead_by: number; behind_by: number }>([
         `repos/${slug}/compare/${ref.rev}...${branch}`,
       ]);
 
-      if (!cmp) {
+      // Only "no such commit" (404/422) says the rev is unknown upstream. A
+      // 5xx, rate limit or dropped connection says nothing about the rev, and
+      // reporting it as LOST would be a false data-loss alarm.
+      if (!res.ok && res.status !== 404 && res.status !== 422) {
+        results.push({
+          name,
+          status: "unknown",
+          locked: ref,
+          upstream_rev: upstreamRev,
+          upstream_date: upstreamDate,
+          detail: `could not compare against ${slug} (${res.status ? `HTTP ${res.status}` : "gh failed"}) — try again`,
+        });
+        continue;
+      }
+
+      if (!res.ok) {
         results.push({
           name,
           status: "orphaned",
@@ -124,6 +154,7 @@ export const inputDrift = defineVerb({
         continue;
       }
 
+      const cmp = res.data;
       if (cmp.behind_by > 0) {
         results.push({
           name,

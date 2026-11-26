@@ -1,0 +1,9 @@
+#!/bin/sh
+# Stand-in for `gh api`. Both repos answer; then `flaky`'s compare hits a
+# server error, while `gone`'s compare is a 404 because the rev was never pushed.
+case "$2" in
+  repos/o/flaky|repos/o/gone) echo '{"default_branch":"main"}' ;;
+  repos/o/*/commits/main) echo '{"sha":"cccc","commit":{"committer":{"date":"2026-11-01T00:00:00Z"}}}' ;;
+  repos/o/flaky/compare/*) echo '{"message":"Server Error"}'; echo "gh: Server Error (HTTP 502)" >&2; exit 1 ;;
+  *) echo '{"message":"Not Found"}'; echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+esac
