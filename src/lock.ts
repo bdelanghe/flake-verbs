@@ -70,11 +70,31 @@ export async function readDirectInputs(root: string): Promise<Map<string, Locked
   const rootNode = lock.nodes?.[lock.root];
   if (!rootNode?.inputs) throw new Error(`flake.lock at ${path} has no root inputs`);
 
+  // A follows-path is an array of input *names* walked from the root node —
+  // its last element is an input name, not a node key (node keys get `_2`
+  // suffixes on collision). Each hop may itself be a follows; `seen` stops a
+  // malformed lock from looping.
+  const resolve = (path: string[], seen = new Set<string>()): string | undefined => {
+    let key: string | undefined = lock.root;
+    for (const step of path) {
+      const next: string | string[] | undefined = lock.nodes[key!]?.inputs?.[step];
+      if (next === undefined) return undefined;
+      if (Array.isArray(next)) {
+        const id = next.join("/");
+        if (seen.has(id)) return undefined;
+        key = resolve(next, new Set(seen).add(id));
+      } else {
+        key = next;
+      }
+      if (key === undefined) return undefined;
+    }
+    return key;
+  };
+
   const out = new Map<string, LockedRef>();
   for (const [name, ref] of Object.entries(rootNode.inputs)) {
-    // A follows-path is an array; the node it lands on is the last element.
-    const key = Array.isArray(ref) ? ref[ref.length - 1] : ref;
-    const node = lock.nodes[key];
+    const key = Array.isArray(ref) ? resolve(ref) : ref;
+    const node = key === undefined ? undefined : lock.nodes[key];
     if (!node?.locked) continue;
     out.set(name, describe(node.locked));
   }

@@ -9,6 +9,7 @@
  */
 import { inputs } from "./verbs/inputs.ts";
 import { inputDrift } from "./verbs/input-drift.ts";
+import { readDirectInputs } from "./lock.ts";
 
 const ROOT = new URL("../fixtures/testflake", import.meta.url).pathname;
 let fails = 0;
@@ -22,6 +23,13 @@ const inv = await inputs.run({ root: ROOT, unusedOnly: false, deep: false });
 const verdictOf = (n: string) => inv.inputs.find((i) => i.name === n)?.verdict;
 expect("used is referenced", verdictOf("used"), "referenced");
 expect("dead is unused", verdictOf("dead"), "unused");
+
+// A follows path is input names walked from the root, not a node key:
+// ["hm", "nixpkgs"] lands on hm's nixpkgs (node `nixpkgs_2`), not root's.
+const FOLLOWS = new URL("../fixtures/follows", import.meta.url).pathname;
+const followed = await readDirectInputs(FOLLOWS);
+expect("follows: hmpkgs resolves via hm", followed.get("hmpkgs")?.rev, "3".repeat(40));
+expect("follows: nixpkgs is root's own", followed.get("nixpkgs")?.rev, "1".repeat(40));
 
 const drift = await inputDrift.run({ root: ROOT, problemsOnly: false });
 const statusOf = (n: string) => drift.inputs.find((i) => i.name === n)?.status;
